@@ -23,6 +23,7 @@ interface FinancialStore {
   addAnexoProjecao: (period: string, recordIndex: number, anexo: Anexo) => void;
   addDetalheExtrato: (period: string, recordIndex: number, detalhe: DetalheValor) => void;
   removeDetalheExtrato: (period: string, recordIndex: number, detalheId: string) => void;
+  removeUploadedFile: (fileId: string) => void;
 
   // Inadimplência
   getInadimplentes: (period: string) => ProjecaoRecord[];
