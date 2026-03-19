@@ -131,34 +131,42 @@ export function MonthCard({ data, index }: MonthCardProps) {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              {/* Summary bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 px-5 py-4 bg-secondary/30 border-t border-border/50">
-                <div>
-                  <p className="text-xs text-muted-foreground">Previsto</p>
-                  <p className="text-sm font-semibold">{formatCurrency(data.totalPrevisto)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Recebido</p>
-                  <p className="text-sm font-semibold text-income">{formatCurrency(data.totalRecebido)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Inadimplência</p>
-                  <p className="text-sm font-semibold text-overdue">{formatCurrency(data.totalInadimplencia)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Taxa Receb.</p>
-                  <p className="text-sm font-semibold text-primary">{taxaRecebimento}%</p>
-                </div>
-                {deficit > 0 && (
+              {/* Summary bar — only when both files present */}
+              {isComplete ? (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 px-5 py-4 bg-secondary/30 border-t border-border/50">
                   <div>
-                    <p className="text-xs text-muted-foreground">Déficit</p>
-                    <p className="text-sm font-semibold text-destructive">{formatCurrency(deficit)}</p>
+                    <p className="text-xs text-muted-foreground">Previsto</p>
+                    <p className="text-sm font-semibold">{formatCurrency(data.totalPrevisto)}</p>
                   </div>
-                )}
-              </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Recebido</p>
+                    <p className="text-sm font-semibold text-income">{formatCurrency(data.totalRecebido)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Inadimplência</p>
+                    <p className="text-sm font-semibold text-overdue">{formatCurrency(data.totalInadimplencia)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Taxa Receb.</p>
+                    <p className="text-sm font-semibold text-primary">{taxaRecebimento}%</p>
+                  </div>
+                  {deficit > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Déficit</p>
+                      <p className="text-sm font-semibold text-destructive">{formatCurrency(deficit)}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="px-5 py-4 bg-secondary/30 border-t border-border/50 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Dados consolidados disponíveis após envio de {!hasProjecao ? 'projeção (.xlsx)' : 'extrato (.pdf)'}
+                  </p>
+                </div>
+              )}
 
-              {/* Inadimplência Panel */}
-              {inadimplentes.length > 0 && (
+              {/* Inadimplência Panel — only when complete */}
+              {isComplete && inadimplentes.length > 0 && (
                 <div className="px-5 py-3">
                   <InadimplenciaPanel inadimplentes={inadimplentes} total={data.totalInadimplencia} />
                 </div>

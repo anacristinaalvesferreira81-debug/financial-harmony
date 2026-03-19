@@ -187,7 +187,7 @@ const MonthDetail = () => {
         )}
 
         {/* Categorias de receita */}
-        {categorias.length > 0 && (
+        {isComplete && categorias.length > 0 && (
           <section className="card-glass p-5">
             <h3 className="text-sm font-semibold text-card-foreground mb-3">Receitas por Categoria</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

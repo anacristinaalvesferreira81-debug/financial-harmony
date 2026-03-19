@@ -161,7 +161,7 @@ const Index = () => {
         )}
 
         {/* Gráficos BI */}
-        {hasData && activeYear && (
+        {hasCompleteData && activeYear && (
           <>
             {years.length > 1 && (
               <div className="flex gap-2">
@@ -178,7 +178,7 @@ const Index = () => {
                 ))}
               </div>
             )}
-            <DashboardCharts months={yearGroups[activeYear] || []} year={activeYear} />
+            <DashboardCharts months={(yearGroups[activeYear] || []).filter(m => m.projecao.length > 0 && m.extrato.length > 0)} year={activeYear} />
           </>
         )}
 
