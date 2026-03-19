@@ -37,18 +37,23 @@ const Index = () => {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const activeYear = selectedYear || (Object.keys(yearGroups).length > 0 ? Math.max(...Object.keys(yearGroups).map(Number)) : null);
 
+  // Only count months that have BOTH projeção and extrato
+  const completeMonths = useMemo(() => {
+    return Object.values(months).filter(m => m.projecao.length > 0 && m.extrato.length > 0);
+  }, [months]);
+
   const totals = useMemo(() => {
     const all: MonthData[] = Object.values(months);
     return {
-      previsto: all.reduce((s, m) => s + m.totalPrevisto, 0),
-      recebido: all.reduce((s, m) => s + m.totalRecebido, 0),
-      inadimplencia: all.reduce((s, m) => s + m.totalInadimplencia, 0),
-      saidas: all.reduce((s, m) => s + m.totalSaidas, 0),
-      saldo: all.reduce((s, m) => s + m.saldoReal, 0),
-      completos: all.filter(m => m.status === 'pronto_conciliacao' || m.status === 'travado').length,
-      pendentes: all.filter(m => m.status === 'aguardando_projecao' || m.status === 'aguardando_extrato').length,
+      previsto: completeMonths.reduce((s, m) => s + m.totalPrevisto, 0),
+      recebido: completeMonths.reduce((s, m) => s + m.totalRecebido, 0),
+      inadimplencia: completeMonths.reduce((s, m) => s + m.totalInadimplencia, 0),
+      saidas: completeMonths.reduce((s, m) => s + m.totalSaidas, 0),
+      saldo: completeMonths.reduce((s, m) => s + m.saldoReal, 0),
+      completos: completeMonths.length,
+      pendentes: all.filter(m => m.projecao.length === 0 || m.extrato.length === 0).length,
     };
-  }, [months]);
+  }, [months, completeMonths]);
 
   const handleProjecao = useCallback(async (file: File) => {
     try {
