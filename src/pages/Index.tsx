@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, ArrowDownUp, FileStack } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
+import type { MonthData } from '@/types/financial';
 import { FileUploadZone } from '@/components/FileUploadZone';
 import { MonthCard } from '@/components/MonthCard';
 import { UploadedFilesList } from '@/components/UploadedFilesList';
