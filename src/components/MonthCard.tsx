@@ -91,22 +91,29 @@ export function MonthCard({ data, index }: MonthCardProps) {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="text-right hidden sm:block">
-              <div className="flex items-center gap-1.5 text-sm">
-                <TrendingUp className="w-3.5 h-3.5 text-income" />
-                <span className="font-medium text-income">{formatCurrency(data.totalRecebido)}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-sm mt-0.5">
-                <TrendingDown className="w-3.5 h-3.5 text-expense" />
-                <span className="font-medium text-expense">{formatCurrency(data.totalSaidas)}</span>
-              </div>
-            </div>
-
-            {data.totalInadimplencia > 0 && (
-              <div className="badge-overdue hidden md:flex">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                {formatCurrency(data.totalInadimplencia)}
-              </div>
+            {isComplete ? (
+              <>
+                <div className="text-right hidden sm:block">
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <TrendingUp className="w-3.5 h-3.5 text-income" />
+                    <span className="font-medium text-income">{formatCurrency(data.totalRecebido)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm mt-0.5">
+                    <TrendingDown className="w-3.5 h-3.5 text-expense" />
+                    <span className="font-medium text-expense">{formatCurrency(data.totalSaidas)}</span>
+                  </div>
+                </div>
+                {data.totalInadimplencia > 0 && (
+                  <div className="badge-overdue hidden md:flex">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    {formatCurrency(data.totalInadimplencia)}
+                  </div>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground hidden sm:block">
+                {!hasProjecao ? 'Falta projeção' : 'Falta extrato'}
+              </span>
             )}
 
             <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
