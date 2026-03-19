@@ -30,6 +30,10 @@ export function MonthCard({ data, index }: MonthCardProps) {
   const { travarMes, destravarMes, addObservacaoProjecao, addObservacaoExtrato, addAnexoExtrato, addAnexoProjecao, addDetalheExtrato } = useFinancialStore();
 
   const monthName = monthNames[data.monthNum] || '';
+  const hasProjecao = data.projecao.length > 0;
+  const hasExtrato = data.extrato.length > 0;
+  const isComplete = hasProjecao && hasExtrato;
+
   const taxaRecebimento = data.totalPrevisto > 0
     ? ((data.totalRecebido / data.totalPrevisto) * 100).toFixed(1)
     : '0.0';
