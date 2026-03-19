@@ -16,8 +16,8 @@ function formatCurrency(value: number): string {
 const Index = () => {
   const { months, uploadedFiles, addProjecaoData, addExtratoData } = useFinancialStore();
 
-  const sortedMonths = useMemo(() => {
-    return Object.values(months).sort((a, b) => {
+  const sortedMonths = useMemo((): MonthData[] => {
+    return Object.values(months).sort((a: MonthData, b: MonthData) => {
       if (a.year !== b.year) return a.year - b.year;
       return a.monthNum - b.monthNum;
     });
