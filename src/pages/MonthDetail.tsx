@@ -40,9 +40,8 @@ const MonthDetail = () => {
   const handleProjecao = useCallback(async (file: File) => {
     try {
       const buffer = await file.arrayBuffer();
-      const { records, period: p } = parseProjecaoXLSX(buffer);
+      const { records } = parseProjecaoXLSX(buffer);
       if (records.length === 0) return { success: false, message: 'Nenhum registro encontrado' };
-      // Force period to match this month
       const added = addProjecaoData(normalizedPeriod, records, file.name);
       if (!added) return { success: false, message: 'Arquivo já processado anteriormente' };
       return { success: true, message: `${records.length} registros importados` };
@@ -54,7 +53,7 @@ const MonthDetail = () => {
   const handleExtrato = useCallback(async (file: File) => {
     try {
       const text = await extractTextFromPDF(file);
-      const { records, period: p } = parseExtratoPDF(text);
+      const { records } = parseExtratoPDF(text);
       if (records.length === 0) return { success: false, message: 'Nenhuma movimentação encontrada' };
       const added = addExtratoData(normalizedPeriod, records, file.name);
       if (!added) return { success: false, message: 'Arquivo já processado anteriormente' };
@@ -64,24 +63,9 @@ const MonthDetail = () => {
     }
   }, [addExtratoData, normalizedPeriod]);
 
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Mês {normalizedPeriod} não encontrado</p>
-          <Button variant="outline" onClick={() => navigate('/')}>Voltar ao painel</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const monthName = MONTH_NAMES[data.monthNum] || '';
-  const deficit = data.totalPrevisto - data.totalRecebido;
-  const taxaRecebimento = data.totalPrevisto > 0 ? ((data.totalRecebido / data.totalPrevisto) * 100).toFixed(1) : '0.0';
-  const inadimplentes = data.projecao.filter(r => r.situacao === 'Aberto');
-
-  // Category breakdown
+  // Category breakdown — must be before early return
   const categorias = useMemo(() => {
+    if (!data) return [];
     const map: Record<string, { total: number; pago: number; aberto: number; count: number }> = {};
     data.projecao.forEach(r => {
       const cat = r.categoria || (r.descricao?.toLowerCase().includes('cota') ? 'cota_participativa' :
