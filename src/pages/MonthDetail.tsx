@@ -325,7 +325,11 @@ const MonthDetail = () => {
             )}
 
             {activeTab === 'inadimplencia' && (
-              inadimplentes.length > 0 ? (
+              !isComplete ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Dados de inadimplência disponíveis após envio de projeção e extrato.
+                </p>
+              ) : inadimplentes.length > 0 ? (
                 <InadimplenciaPanel inadimplentes={inadimplentes} total={data.totalInadimplencia} />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhum item inadimplente</p>
