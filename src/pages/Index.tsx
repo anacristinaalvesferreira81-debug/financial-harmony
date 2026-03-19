@@ -141,13 +141,22 @@ const Index = () => {
         </section>
 
         {/* KPIs Globais */}
-        {hasData && (
+        {hasCompleteData && (
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <KPICard title="Previsto" value={formatCurrency(totals.previsto)} icon={FileStack} delay={0} />
             <KPICard title="Recebido" value={formatCurrency(totals.recebido)} icon={TrendingUp} variant="income" delay={0.05} />
             <KPICard title="Inadimplência" value={formatCurrency(totals.inadimplencia)} icon={AlertTriangle} variant="overdue" delay={0.1} />
             <KPICard title="Saídas" value={formatCurrency(totals.saidas)} icon={TrendingDown} variant="expense" delay={0.15} />
             <KPICard title="Saldo Real" value={formatCurrency(totals.saldo)} icon={ArrowDownUp} delay={0.2} subtitle="Recebido - Saídas" />
+          </section>
+        )}
+
+        {hasData && !hasCompleteData && (
+          <section className="card-glass p-6 text-center">
+            <AlertTriangle className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Dados consolidados serão exibidos após enviar <strong>projeção</strong> e <strong>extrato</strong> de pelo menos um mês.
+            </p>
           </section>
         )}
 
