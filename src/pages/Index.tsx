@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, ArrowDownUp, FileStack } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, ArrowDownUp, FileStack, Calendar } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import type { MonthData } from '@/types/financial';
 import { FileUploadZone } from '@/components/FileUploadZone';
@@ -24,6 +24,16 @@ const Index = () => {
     });
   }, [months]);
 
+  // Agrupar por ano para visão de balancete
+  const yearGroups = useMemo(() => {
+    const groups: Record<number, MonthData[]> = {};
+    sortedMonths.forEach(m => {
+      if (!groups[m.year]) groups[m.year] = [];
+      groups[m.year].push(m);
+    });
+    return groups;
+  }, [sortedMonths]);
+
   const totals = useMemo(() => {
     const all: MonthData[] = Object.values(months);
     return {
@@ -32,6 +42,8 @@ const Index = () => {
       inadimplencia: all.reduce((s, m) => s + m.totalInadimplencia, 0),
       saidas: all.reduce((s, m) => s + m.totalSaidas, 0),
       saldo: all.reduce((s, m) => s + m.saldoReal, 0),
+      completos: all.filter(m => m.status === 'pronto_conciliacao' || m.status === 'travado').length,
+      pendentes: all.filter(m => m.status === 'aguardando_projecao' || m.status === 'aguardando_extrato').length,
     };
   }, [months]);
 
@@ -65,7 +77,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -77,13 +88,21 @@ const Index = () => {
               <BarChart3 className="w-4.5 h-4.5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-base font-semibold text-foreground tracking-tight">Conciliação</h1>
-              <p className="text-[10px] text-muted-foreground -mt-0.5">Grupo Win Brasil</p>
+              <h1 className="text-base font-semibold text-foreground tracking-tight">Conciliação Financeira</h1>
+              <p className="text-[10px] text-muted-foreground -mt-0.5">Balancete Anual — Grupo Win Brasil</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{uploadedFiles.length} arquivos</span>
-            <div className="w-2 h-2 rounded-full bg-income animate-pulse" />
+          <div className="flex items-center gap-4">
+            {hasData && (
+              <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{totals.completos} completos</span>
+                {totals.pendentes > 0 && <span className="text-overdue">{totals.pendentes} pendentes</span>}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{uploadedFiles.length} arquivos</span>
+              <div className="w-2 h-2 rounded-full bg-income animate-pulse" />
+            </div>
           </div>
         </div>
       </motion.header>
@@ -116,28 +135,45 @@ const Index = () => {
               <div className="flex flex-col items-center justify-center h-full py-8 text-center">
                 <FileStack className="w-10 h-10 text-muted-foreground/30 mb-3" />
                 <p className="text-sm text-muted-foreground">Nenhum arquivo processado</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Envie seus arquivos ao lado</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Envie projeção e extrato de qualquer mês</p>
               </div>
             )}
           </div>
         </section>
 
-        {/* Monthly View */}
-        {hasData && (
-          <section>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="section-title">Visão Mensal</h2>
-                <p className="section-subtitle mt-0.5">{sortedMonths.length} meses catalogados</p>
+        {/* Annual View grouped by year */}
+        {hasData && Object.entries(yearGroups).sort(([a], [b]) => Number(a) - Number(b)).map(([year, yearMonths]) => {
+          const yearPrevisto = yearMonths.reduce((s, m) => s + m.totalPrevisto, 0);
+          const yearRecebido = yearMonths.reduce((s, m) => s + m.totalRecebido, 0);
+          const yearSaidas = yearMonths.reduce((s, m) => s + m.totalSaidas, 0);
+          const yearSaldo = yearRecebido - yearSaidas;
+
+          return (
+            <section key={year}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  <div>
+                    <h2 className="section-title">Balancete {year}</h2>
+                    <p className="section-subtitle mt-0.5">
+                      {yearMonths.length}/12 meses · Saldo: {formatCurrency(yearSaldo)}
+                    </p>
+                  </div>
+                </div>
+                <div className="hidden sm:flex gap-4 text-xs">
+                  <span className="text-muted-foreground">Prev: {formatCurrency(yearPrevisto)}</span>
+                  <span className="text-income">Rec: {formatCurrency(yearRecebido)}</span>
+                  <span className="text-expense">Saídas: {formatCurrency(yearSaidas)}</span>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3">
-              {sortedMonths.map((month, i) => (
-                <MonthCard key={month.month} data={month} index={i} />
-              ))}
-            </div>
-          </section>
-        )}
+              <div className="space-y-3">
+                {yearMonths.map((month, i) => (
+                  <MonthCard key={month.month} data={month} index={i} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
 
         {/* Empty state */}
         {!hasData && (
@@ -150,9 +186,9 @@ const Index = () => {
             <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto mb-6 flex items-center justify-center">
               <BarChart3 className="w-10 h-10 text-muted-foreground/40" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">Comece enviando seus documentos</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-2">Envie seus documentos para começar</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Envie a projeção de recebíveis (.xlsx) e o extrato bancário Sicoob (.pdf) para iniciar a conciliação financeira.
+              Envie projeção (.xlsx) e extrato bancário (.pdf) de qualquer mês. Os documentos serão organizados automaticamente e a conciliação será feita quando ambos estiverem presentes.
             </p>
           </motion.div>
         )}
