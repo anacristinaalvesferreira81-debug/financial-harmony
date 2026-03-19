@@ -97,6 +97,10 @@ const MonthDetail = () => {
   }
 
   const monthName = MONTH_NAMES[data.monthNum] || '';
+  const hasProjecao = data.projecao.length > 0;
+  const hasExtrato = data.extrato.length > 0;
+  const isComplete = hasProjecao && hasExtrato;
+
   const deficit = data.totalPrevisto - data.totalRecebido;
   const taxaRecebimento = data.totalPrevisto > 0 ? ((data.totalRecebido / data.totalPrevisto) * 100).toFixed(1) : '0.0';
   const inadimplentes = data.projecao.filter(r => r.situacao === 'Aberto');
@@ -109,9 +113,6 @@ const MonthDetail = () => {
     dailyExtrato[day].push(r);
   });
   const extratoDays = Object.keys(dailyExtrato).sort((a, b) => parseInt(a) - parseInt(b));
-
-  const hasProjecao = data.projecao.length > 0;
-  const hasExtrato = data.extrato.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,13 +150,26 @@ const MonthDetail = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* KPIs do mês */}
-        <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <KPICard title="Previsto" value={formatCurrency(data.totalPrevisto)} icon={FileStack} delay={0} />
-          <KPICard title="Recebido" value={formatCurrency(data.totalRecebido)} icon={TrendingUp} variant="income" delay={0.05} subtitle={`${taxaRecebimento}% do previsto`} />
-          <KPICard title="Inadimplência" value={formatCurrency(data.totalInadimplencia)} icon={AlertTriangle} variant="overdue" delay={0.1} subtitle={`${inadimplentes.length} itens`} />
-          <KPICard title="Saídas" value={formatCurrency(data.totalSaidas)} icon={TrendingDown} variant="expense" delay={0.15} />
-          <KPICard title="Saldo Real" value={formatCurrency(data.saldoReal)} icon={ArrowDownUp} delay={0.2} subtitle={deficit > 0 ? `Déficit: ${formatCurrency(deficit)}` : undefined} />
-        </section>
+        {isComplete ? (
+          <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <KPICard title="Previsto" value={formatCurrency(data.totalPrevisto)} icon={FileStack} delay={0} />
+            <KPICard title="Recebido" value={formatCurrency(data.totalRecebido)} icon={TrendingUp} variant="income" delay={0.05} subtitle={`${taxaRecebimento}% do previsto`} />
+            <KPICard title="Inadimplência" value={formatCurrency(data.totalInadimplencia)} icon={AlertTriangle} variant="overdue" delay={0.1} subtitle={`${inadimplentes.length} itens`} />
+            <KPICard title="Saídas" value={formatCurrency(data.totalSaidas)} icon={TrendingDown} variant="expense" delay={0.15} />
+            <KPICard title="Saldo Real" value={formatCurrency(data.saldoReal)} icon={ArrowDownUp} delay={0.2} subtitle={deficit > 0 ? `Déficit: ${formatCurrency(deficit)}` : undefined} />
+          </section>
+        ) : (
+          <section className="card-glass p-6 text-center">
+            <AlertTriangle className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              {!hasProjecao && !hasExtrato
+                ? 'Envie a projeção (.xlsx) e o extrato (.pdf) para visualizar dados consolidados deste mês.'
+                : !hasProjecao
+                ? 'Falta a projeção (.xlsx) — documento de entradas previstas — para cruzar com o extrato e exibir resultados.'
+                : 'Falta o extrato bancário (.pdf) — documento de saídas — para cruzar com a projeção e exibir resultados.'}
+            </p>
+          </section>
+        )}
 
         {/* Upload de complemento se faltar */}
         {(!hasProjecao || !hasExtrato) && (
@@ -173,7 +187,7 @@ const MonthDetail = () => {
         )}
 
         {/* Categorias de receita */}
-        {categorias.length > 0 && (
+        {isComplete && categorias.length > 0 && (
           <section className="card-glass p-5">
             <h3 className="text-sm font-semibold text-card-foreground mb-3">Receitas por Categoria</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -311,7 +325,11 @@ const MonthDetail = () => {
             )}
 
             {activeTab === 'inadimplencia' && (
-              inadimplentes.length > 0 ? (
+              !isComplete ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Dados de inadimplência disponíveis após envio de projeção e extrato.
+                </p>
+              ) : inadimplentes.length > 0 ? (
                 <InadimplenciaPanel inadimplentes={inadimplentes} total={data.totalInadimplencia} />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhum item inadimplente</p>

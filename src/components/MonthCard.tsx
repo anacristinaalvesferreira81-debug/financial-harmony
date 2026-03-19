@@ -30,6 +30,10 @@ export function MonthCard({ data, index }: MonthCardProps) {
   const { travarMes, destravarMes, addObservacaoProjecao, addObservacaoExtrato, addAnexoExtrato, addAnexoProjecao, addDetalheExtrato } = useFinancialStore();
 
   const monthName = monthNames[data.monthNum] || '';
+  const hasProjecao = data.projecao.length > 0;
+  const hasExtrato = data.extrato.length > 0;
+  const isComplete = hasProjecao && hasExtrato;
+
   const taxaRecebimento = data.totalPrevisto > 0
     ? ((data.totalRecebido / data.totalPrevisto) * 100).toFixed(1)
     : '0.0';
@@ -87,22 +91,29 @@ export function MonthCard({ data, index }: MonthCardProps) {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="text-right hidden sm:block">
-              <div className="flex items-center gap-1.5 text-sm">
-                <TrendingUp className="w-3.5 h-3.5 text-income" />
-                <span className="font-medium text-income">{formatCurrency(data.totalRecebido)}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-sm mt-0.5">
-                <TrendingDown className="w-3.5 h-3.5 text-expense" />
-                <span className="font-medium text-expense">{formatCurrency(data.totalSaidas)}</span>
-              </div>
-            </div>
-
-            {data.totalInadimplencia > 0 && (
-              <div className="badge-overdue hidden md:flex">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                {formatCurrency(data.totalInadimplencia)}
-              </div>
+            {isComplete ? (
+              <>
+                <div className="text-right hidden sm:block">
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <TrendingUp className="w-3.5 h-3.5 text-income" />
+                    <span className="font-medium text-income">{formatCurrency(data.totalRecebido)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm mt-0.5">
+                    <TrendingDown className="w-3.5 h-3.5 text-expense" />
+                    <span className="font-medium text-expense">{formatCurrency(data.totalSaidas)}</span>
+                  </div>
+                </div>
+                {data.totalInadimplencia > 0 && (
+                  <div className="badge-overdue hidden md:flex">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    {formatCurrency(data.totalInadimplencia)}
+                  </div>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground hidden sm:block">
+                {!hasProjecao ? 'Falta projeção' : 'Falta extrato'}
+              </span>
             )}
 
             <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -120,34 +131,42 @@ export function MonthCard({ data, index }: MonthCardProps) {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              {/* Summary bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 px-5 py-4 bg-secondary/30 border-t border-border/50">
-                <div>
-                  <p className="text-xs text-muted-foreground">Previsto</p>
-                  <p className="text-sm font-semibold">{formatCurrency(data.totalPrevisto)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Recebido</p>
-                  <p className="text-sm font-semibold text-income">{formatCurrency(data.totalRecebido)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Inadimplência</p>
-                  <p className="text-sm font-semibold text-overdue">{formatCurrency(data.totalInadimplencia)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Taxa Receb.</p>
-                  <p className="text-sm font-semibold text-primary">{taxaRecebimento}%</p>
-                </div>
-                {deficit > 0 && (
+              {/* Summary bar — only when both files present */}
+              {isComplete ? (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 px-5 py-4 bg-secondary/30 border-t border-border/50">
                   <div>
-                    <p className="text-xs text-muted-foreground">Déficit</p>
-                    <p className="text-sm font-semibold text-destructive">{formatCurrency(deficit)}</p>
+                    <p className="text-xs text-muted-foreground">Previsto</p>
+                    <p className="text-sm font-semibold">{formatCurrency(data.totalPrevisto)}</p>
                   </div>
-                )}
-              </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Recebido</p>
+                    <p className="text-sm font-semibold text-income">{formatCurrency(data.totalRecebido)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Inadimplência</p>
+                    <p className="text-sm font-semibold text-overdue">{formatCurrency(data.totalInadimplencia)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Taxa Receb.</p>
+                    <p className="text-sm font-semibold text-primary">{taxaRecebimento}%</p>
+                  </div>
+                  {deficit > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Déficit</p>
+                      <p className="text-sm font-semibold text-destructive">{formatCurrency(deficit)}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="px-5 py-4 bg-secondary/30 border-t border-border/50 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Dados consolidados disponíveis após envio de {!hasProjecao ? 'projeção (.xlsx)' : 'extrato (.pdf)'}
+                  </p>
+                </div>
+              )}
 
-              {/* Inadimplência Panel */}
-              {inadimplentes.length > 0 && (
+              {/* Inadimplência Panel — only when complete */}
+              {isComplete && inadimplentes.length > 0 && (
                 <div className="px-5 py-3">
                   <InadimplenciaPanel inadimplentes={inadimplentes} total={data.totalInadimplencia} />
                 </div>

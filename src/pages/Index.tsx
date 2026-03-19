@@ -37,18 +37,23 @@ const Index = () => {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const activeYear = selectedYear || (Object.keys(yearGroups).length > 0 ? Math.max(...Object.keys(yearGroups).map(Number)) : null);
 
+  // Only count months that have BOTH projeção and extrato
+  const completeMonths = useMemo(() => {
+    return Object.values(months).filter(m => m.projecao.length > 0 && m.extrato.length > 0);
+  }, [months]);
+
   const totals = useMemo(() => {
     const all: MonthData[] = Object.values(months);
     return {
-      previsto: all.reduce((s, m) => s + m.totalPrevisto, 0),
-      recebido: all.reduce((s, m) => s + m.totalRecebido, 0),
-      inadimplencia: all.reduce((s, m) => s + m.totalInadimplencia, 0),
-      saidas: all.reduce((s, m) => s + m.totalSaidas, 0),
-      saldo: all.reduce((s, m) => s + m.saldoReal, 0),
-      completos: all.filter(m => m.status === 'pronto_conciliacao' || m.status === 'travado').length,
-      pendentes: all.filter(m => m.status === 'aguardando_projecao' || m.status === 'aguardando_extrato').length,
+      previsto: completeMonths.reduce((s, m) => s + m.totalPrevisto, 0),
+      recebido: completeMonths.reduce((s, m) => s + m.totalRecebido, 0),
+      inadimplencia: completeMonths.reduce((s, m) => s + m.totalInadimplencia, 0),
+      saidas: completeMonths.reduce((s, m) => s + m.totalSaidas, 0),
+      saldo: completeMonths.reduce((s, m) => s + m.saldoReal, 0),
+      completos: completeMonths.length,
+      pendentes: all.filter(m => m.projecao.length === 0 || m.extrato.length === 0).length,
     };
-  }, [months]);
+  }, [months, completeMonths]);
 
   const handleProjecao = useCallback(async (file: File) => {
     try {
@@ -77,6 +82,7 @@ const Index = () => {
   }, [addExtratoData]);
 
   const hasData = sortedMonths.length > 0;
+  const hasCompleteData = completeMonths.length > 0;
   const years = Object.keys(yearGroups).map(Number).sort();
 
   return (
@@ -135,7 +141,7 @@ const Index = () => {
         </section>
 
         {/* KPIs Globais */}
-        {hasData && (
+        {hasCompleteData && (
           <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <KPICard title="Previsto" value={formatCurrency(totals.previsto)} icon={FileStack} delay={0} />
             <KPICard title="Recebido" value={formatCurrency(totals.recebido)} icon={TrendingUp} variant="income" delay={0.05} />
@@ -145,8 +151,17 @@ const Index = () => {
           </section>
         )}
 
+        {hasData && !hasCompleteData && (
+          <section className="card-glass p-6 text-center">
+            <AlertTriangle className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Dados consolidados serão exibidos após enviar <strong>projeção</strong> e <strong>extrato</strong> de pelo menos um mês.
+            </p>
+          </section>
+        )}
+
         {/* Gráficos BI */}
-        {hasData && activeYear && (
+        {hasCompleteData && activeYear && (
           <>
             {years.length > 1 && (
               <div className="flex gap-2">
@@ -163,7 +178,7 @@ const Index = () => {
                 ))}
               </div>
             )}
-            <DashboardCharts months={yearGroups[activeYear] || []} year={activeYear} />
+            <DashboardCharts months={(yearGroups[activeYear] || []).filter(m => m.projecao.length > 0 && m.extrato.length > 0)} year={activeYear} />
           </>
         )}
 
