@@ -1,11 +1,12 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, ArrowDownUp, FileStack, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, ArrowDownUp, FileStack } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import type { MonthData } from '@/types/financial';
 import { FileUploadZone } from '@/components/FileUploadZone';
-import { MonthCard } from '@/components/MonthCard';
 import { UploadedFilesList } from '@/components/UploadedFilesList';
+import { YearAccordion } from '@/components/YearAccordion';
+import { DashboardCharts } from '@/components/DashboardCharts';
 import { useFinancialStore } from '@/stores/financialStore';
 import { parseProjecaoXLSX } from '@/lib/parseProjecao';
 import { parseExtratoPDF, extractTextFromPDF } from '@/lib/parseExtrato';
@@ -18,13 +19,12 @@ const Index = () => {
   const { months, uploadedFiles, addProjecaoData, addExtratoData } = useFinancialStore();
 
   const sortedMonths = useMemo((): MonthData[] => {
-    return Object.values(months).sort((a: MonthData, b: MonthData) => {
+    return Object.values(months).sort((a, b) => {
       if (a.year !== b.year) return a.year - b.year;
       return a.monthNum - b.monthNum;
     });
   }, [months]);
 
-  // Agrupar por ano para visão de balancete
   const yearGroups = useMemo(() => {
     const groups: Record<number, MonthData[]> = {};
     sortedMonths.forEach(m => {
@@ -33,6 +33,9 @@ const Index = () => {
     });
     return groups;
   }, [sortedMonths]);
+
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const activeYear = selectedYear || (Object.keys(yearGroups).length > 0 ? Math.max(...Object.keys(yearGroups).map(Number)) : null);
 
   const totals = useMemo(() => {
     const all: MonthData[] = Object.values(months);
@@ -55,7 +58,7 @@ const Index = () => {
       const added = addProjecaoData(period, records, file.name);
       if (!added) return { success: false, message: 'Arquivo já processado anteriormente' };
       return { success: true, message: `${records.length} registros importados (${period})` };
-    } catch (e) {
+    } catch {
       return { success: false, message: 'Erro ao ler arquivo XLSX' };
     }
   }, [addProjecaoData]);
@@ -68,12 +71,13 @@ const Index = () => {
       const added = addExtratoData(period, records, file.name);
       if (!added) return { success: false, message: 'Arquivo já processado anteriormente' };
       return { success: true, message: `${records.length} movimentações importadas (${period})` };
-    } catch (e) {
+    } catch {
       return { success: false, message: 'Erro ao ler arquivo PDF' };
     }
   }, [addExtratoData]);
 
   const hasData = sortedMonths.length > 0;
+  const years = Object.keys(yearGroups).map(Number).sort();
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,18 +112,7 @@ const Index = () => {
       </motion.header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* KPIs */}
-        {hasData && (
-          <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <KPICard title="Previsto" value={formatCurrency(totals.previsto)} icon={FileStack} delay={0} />
-            <KPICard title="Recebido" value={formatCurrency(totals.recebido)} icon={TrendingUp} variant="income" delay={0.05} />
-            <KPICard title="Inadimplência" value={formatCurrency(totals.inadimplencia)} icon={AlertTriangle} variant="overdue" delay={0.1} />
-            <KPICard title="Saídas" value={formatCurrency(totals.saidas)} icon={TrendingDown} variant="expense" delay={0.15} />
-            <KPICard title="Saldo Real" value={formatCurrency(totals.saldo)} icon={ArrowDownUp} delay={0.2} subtitle="Recebido - Saídas" />
-          </section>
-        )}
-
-        {/* Upload Section */}
+        {/* Upload */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="card-glass p-5">
@@ -141,39 +134,43 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Annual View grouped by year */}
-        {hasData && Object.entries(yearGroups).sort(([a], [b]) => Number(a) - Number(b)).map(([year, yearMonths]) => {
-          const yearPrevisto = yearMonths.reduce((s, m) => s + m.totalPrevisto, 0);
-          const yearRecebido = yearMonths.reduce((s, m) => s + m.totalRecebido, 0);
-          const yearSaidas = yearMonths.reduce((s, m) => s + m.totalSaidas, 0);
-          const yearSaldo = yearRecebido - yearSaidas;
+        {/* KPIs Globais */}
+        {hasData && (
+          <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <KPICard title="Previsto" value={formatCurrency(totals.previsto)} icon={FileStack} delay={0} />
+            <KPICard title="Recebido" value={formatCurrency(totals.recebido)} icon={TrendingUp} variant="income" delay={0.05} />
+            <KPICard title="Inadimplência" value={formatCurrency(totals.inadimplencia)} icon={AlertTriangle} variant="overdue" delay={0.1} />
+            <KPICard title="Saídas" value={formatCurrency(totals.saidas)} icon={TrendingDown} variant="expense" delay={0.15} />
+            <KPICard title="Saldo Real" value={formatCurrency(totals.saldo)} icon={ArrowDownUp} delay={0.2} subtitle="Recebido - Saídas" />
+          </section>
+        )}
 
-          return (
-            <section key={year}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  <div>
-                    <h2 className="section-title">Balancete {year}</h2>
-                    <p className="section-subtitle mt-0.5">
-                      {yearMonths.length}/12 meses · Saldo: {formatCurrency(yearSaldo)}
-                    </p>
-                  </div>
-                </div>
-                <div className="hidden sm:flex gap-4 text-xs">
-                  <span className="text-muted-foreground">Prev: {formatCurrency(yearPrevisto)}</span>
-                  <span className="text-income">Rec: {formatCurrency(yearRecebido)}</span>
-                  <span className="text-expense">Saídas: {formatCurrency(yearSaidas)}</span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {yearMonths.map((month, i) => (
-                  <MonthCard key={month.month} data={month} index={i} />
+        {/* Gráficos BI */}
+        {hasData && activeYear && (
+          <>
+            {years.length > 1 && (
+              <div className="flex gap-2">
+                {years.map(y => (
+                  <button
+                    key={y}
+                    onClick={() => setSelectedYear(y)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      y === activeYear ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-card-foreground'
+                    }`}
+                  >
+                    {y}
+                  </button>
                 ))}
               </div>
-            </section>
-          );
-        })}
+            )}
+            <DashboardCharts months={yearGroups[activeYear] || []} year={activeYear} />
+          </>
+        )}
+
+        {/* Anos com grid de meses */}
+        {hasData && years.map(y => (
+          <YearAccordion key={y} year={y} months={yearGroups[y]} />
+        ))}
 
         {/* Empty state */}
         {!hasData && (
@@ -188,7 +185,7 @@ const Index = () => {
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">Envie seus documentos para começar</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Envie projeção (.xlsx) e extrato bancário (.pdf) de qualquer mês. Os documentos serão organizados automaticamente e a conciliação será feita quando ambos estiverem presentes.
+              Envie projeção (.xlsx) e extrato bancário (.pdf) de qualquer mês. Os documentos serão organizados automaticamente.
             </p>
           </motion.div>
         )}
