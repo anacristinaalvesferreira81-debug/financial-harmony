@@ -83,11 +83,25 @@ const MonthDetail = () => {
       label: RECEITA_CATEGORIAS[key as ReceitaCategoria] || key,
       ...val,
     }));
-  }, [data.projecao]);
+  }, [data?.projecao]);
 
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Mês {normalizedPeriod} não encontrado</p>
+          <Button variant="outline" onClick={() => navigate('/')}>Voltar ao painel</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const monthName = MONTH_NAMES[data.monthNum] || '';
+  const deficit = data.totalPrevisto - data.totalRecebido;
+  const taxaRecebimento = data.totalPrevisto > 0 ? ((data.totalRecebido / data.totalPrevisto) * 100).toFixed(1) : '0.0';
+  const inadimplentes = data.projecao.filter(r => r.situacao === 'Aberto');
   const catChartData = categorias.map(c => ({ name: c.label, pago: c.pago, aberto: c.aberto }));
 
-  // Daily breakdown for extrato
   const dailyExtrato: Record<string, typeof data.extrato> = {};
   data.extrato.forEach(r => {
     const day = r.data.split('/')[0] || 'sem-data';
