@@ -23,6 +23,7 @@ interface FinancialStore {
   addAnexoProjecao: (period: string, recordIndex: number, anexo: Anexo) => void;
   addDetalheExtrato: (period: string, recordIndex: number, detalhe: DetalheValor) => void;
   removeDetalheExtrato: (period: string, recordIndex: number, detalheId: string) => void;
+  removeUploadedFile: (fileId: string) => void;
 
   // Inadimplência
   getInadimplentes: (period: string) => ProjecaoRecord[];
@@ -221,6 +222,34 @@ export const useFinancialStore = create<FinancialStore>()(
         const month = get().months[period];
         if (!month) return [];
         return month.projecao.filter(r => r.situacao === 'Aberto');
+      },
+
+      removeUploadedFile: (fileId) => {
+        const state = get();
+        const file = state.uploadedFiles.find(f => f.id === fileId);
+        if (!file) return;
+
+        const month = state.months[file.period];
+        if (month?.travado) return;
+
+        const newFiles = state.uploadedFiles.filter(f => f.id !== fileId);
+        const newMonths = { ...state.months };
+
+        if (month) {
+          const updated = { ...month };
+          if (file.type === 'projecao') {
+            updated.projecao = [];
+          } else {
+            updated.extrato = [];
+          }
+          if (updated.projecao.length === 0 && updated.extrato.length === 0) {
+            delete newMonths[file.period];
+          } else {
+            newMonths[file.period] = computeMonthData(updated, file.period);
+          }
+        }
+
+        set({ months: newMonths, uploadedFiles: newFiles });
       },
     }),
     {
