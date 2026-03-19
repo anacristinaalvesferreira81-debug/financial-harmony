@@ -97,6 +97,10 @@ const MonthDetail = () => {
   }
 
   const monthName = MONTH_NAMES[data.monthNum] || '';
+  const hasProjecao = data.projecao.length > 0;
+  const hasExtrato = data.extrato.length > 0;
+  const isComplete = hasProjecao && hasExtrato;
+
   const deficit = data.totalPrevisto - data.totalRecebido;
   const taxaRecebimento = data.totalPrevisto > 0 ? ((data.totalRecebido / data.totalPrevisto) * 100).toFixed(1) : '0.0';
   const inadimplentes = data.projecao.filter(r => r.situacao === 'Aberto');
@@ -109,9 +113,6 @@ const MonthDetail = () => {
     dailyExtrato[day].push(r);
   });
   const extratoDays = Object.keys(dailyExtrato).sort((a, b) => parseInt(a) - parseInt(b));
-
-  const hasProjecao = data.projecao.length > 0;
-  const hasExtrato = data.extrato.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
