@@ -24,7 +24,7 @@ const Index = () => {
   }, [months]);
 
   const totals = useMemo(() => {
-    const all = Object.values(months);
+    const all: MonthData[] = Object.values(months);
     return {
       previsto: all.reduce((s, m) => s + m.totalPrevisto, 0),
       recebido: all.reduce((s, m) => s + m.totalRecebido, 0),
