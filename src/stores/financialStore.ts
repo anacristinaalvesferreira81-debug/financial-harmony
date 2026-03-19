@@ -223,6 +223,34 @@ export const useFinancialStore = create<FinancialStore>()(
         if (!month) return [];
         return month.projecao.filter(r => r.situacao === 'Aberto');
       },
+
+      removeUploadedFile: (fileId) => {
+        const state = get();
+        const file = state.uploadedFiles.find(f => f.id === fileId);
+        if (!file) return;
+
+        const month = state.months[file.period];
+        if (month?.travado) return;
+
+        const newFiles = state.uploadedFiles.filter(f => f.id !== fileId);
+        const newMonths = { ...state.months };
+
+        if (month) {
+          const updated = { ...month };
+          if (file.type === 'projecao') {
+            updated.projecao = [];
+          } else {
+            updated.extrato = [];
+          }
+          if (updated.projecao.length === 0 && updated.extrato.length === 0) {
+            delete newMonths[file.period];
+          } else {
+            newMonths[file.period] = computeMonthData(updated, file.period);
+          }
+        }
+
+        set({ months: newMonths, uploadedFiles: newFiles });
+      },
     }),
     {
       name: 'conciliacao-financeira',
