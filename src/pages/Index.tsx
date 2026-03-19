@@ -82,6 +82,7 @@ const Index = () => {
   }, [addExtratoData]);
 
   const hasData = sortedMonths.length > 0;
+  const hasCompleteData = completeMonths.length > 0;
   const years = Object.keys(yearGroups).map(Number).sort();
 
   return (
